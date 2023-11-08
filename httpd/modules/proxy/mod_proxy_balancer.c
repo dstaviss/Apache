@@ -976,6 +976,7 @@ static int balancer_handler(request_rec *r)
     int ok2change = 1;
     const char *name;
     const char *action;
+    const char *xml = NULL;
     apr_status_t rv;
 
     /* is this for us? */
@@ -1030,6 +1031,7 @@ static int balancer_handler(request_rec *r)
         buf[len] = '\0';
         push2table(buf, params, NULL, r->pool);
     }
+
     if ((name = apr_table_get(params, "b")))
         bsel = ap_proxy_get_balancer(r->pool, conf,
             apr_pstrcat(r->pool, BALANCER_PREFIX, name, NULL), 0);
@@ -1038,6 +1040,8 @@ static int balancer_handler(request_rec *r)
         wsel = ap_proxy_get_worker(r->pool, bsel, conf, name);
     }
 
+    /* Get XML mode now, use later */
+    xml = apr_table_get(params, "xml");
 
     /* Check that the supplied nonce matches this server's nonce;
      * otherwise ignore all parameters, to prevent a CSRF attack. */
@@ -1231,7 +1235,7 @@ static int balancer_handler(request_rec *r)
     action = ap_construct_url(r->pool, r->uri, r);
     ap_log_rerror(APLOG_MARK, APLOG_DEBUG, 0, r, APLOGNO(01204) "genning page");
 
-    if (apr_table_get(params, "xml")) {
+    if (xml) {
         char date[APR_RFC822_DATE_LEN];
         ap_set_content_type(r, "text/xml");
         ap_rputs("<?xml version='1.0' encoding='UTF-8' ?>\n", r);
